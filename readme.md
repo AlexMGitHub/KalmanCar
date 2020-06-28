@@ -1,9 +1,9 @@
-
-
 # Visualizing a Kalman Filter with KalmanCar
+
 <p align="center">
 <img src="docs/images/KalmanCar.gif" title="KalmanCar in action!" alt="KalmanCar in action!" width="640"/>
 </p>
+
 ## Overview
 I created a simulation that uses a Kalman filter to track the position of a car driving around a race track.  I wrote the code in Python 3.7 and created the animation using PyGame and public domain art assets (see Acknowlegements section).  A **requirements.txt** file is included.  The Python files of interest are:
 
