@@ -13,6 +13,8 @@ I created a simulation that uses a Kalman filter to track the position of a car 
  
 The following sections give some brief background on the Kalman filter itself, as well as discuss how I implemented the filter and how tuning the simulation parameters impacts performance.
 
+**Note: GitHub Flavored Markdown does not currently support LaTeX equations, please refer instead to readme.pdf contained in this repo.**
+
 ## Kalman Filter Overview
 The discrete Kalman filter is composed of five equations split into two groups: the time update or "prediction" equations and the measurement update or "correction" equations.
 $$
