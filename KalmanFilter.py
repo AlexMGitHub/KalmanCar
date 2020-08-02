@@ -8,15 +8,18 @@ Created on Fri Jun  5 12:18:36 2020
 ###############################################################################
 # KalmanFilter.py
 #
-# Revision:     1.00
-# Date:         6/6/2020
+# Revision:     1.01
+# Date:         8/2/2020
 # Author:       Alex
 #
 # Purpose:      Implement a general-purpose Kalman filter class.
 #
-# Inputs:
+# KalmanFilter class:
 # 1. All inputs to the class must be 2D Numpy arrays, even scalars.
 # 2. See the __init__ function for a full description of inputs.
+#
+# Functions:
+# 1. constant_voltage_example -- A test function to verify KalmanFilter class
 #
 # Notes:
 # 1. Notation based on professors Greg Welch and Gary Bishop's course pack on 
@@ -28,13 +31,14 @@ Created on Fri Jun  5 12:18:36 2020
 #
 ##############################################################################
 """
-
 import numpy as np
 from matplotlib import pyplot as plt
 
 
 class KalmanFilter:
+    """Implements a general-purpose Kalman filter."""
     def __init__(self, **kwargs):
+        """Initialize Kalman filter parameters and verify matrix dimensions."""
         # Initial values (time step = 0) of parameters
         self.A = kwargs['A'] # State transition matrix, size (nxn)
         self.B = kwargs['B'] # Control-input model matrix, size (nxj)
@@ -63,7 +67,7 @@ class KalmanFilter:
                
         
     def predict(self):
-        # Time update (Predict)
+        """Time update (Predict)"""
         # State extrapolation (a priori state estimate)
         self.x = np.dot(self.A, self.x) + np.dot(self.B, self.u)
         # Estimate error covariance extrapolation (a priori estimate error)
@@ -71,7 +75,7 @@ class KalmanFilter:
     
     
     def correct(self, z, Q=None, R=None, u=None):
-        # Measurement Update (Correct)
+        """Measurement Update (Correct)"""
         if Q is None: Q = self.Q
         if R is None: R = self.R
         if u is None: u = self.u
@@ -90,10 +94,10 @@ class KalmanFilter:
 
 
 def constant_voltage_example():
-    # Visualize and validate the Kalman Filter class with a simple estimate of 
-    # a constant voltage.  Example from section 4.3 of:
-    # https://www.cs.unc.edu/~tracker/media/pdf/SIGGRAPH2001_CoursePack_08.pdf
-    
+    """Visualize and validate the Kalman Filter class with a simple estimate  
+    of a constant voltage.  Example from section 4.3 of:
+    https://www.cs.unc.edu/~tracker/media/pdf/SIGGRAPH2001_CoursePack_08.pdf
+    """
     # Input initial values (time step = 0) for all parameters
     A = np.array([[1]]) # Size of (1,1).  All parameters must be 2D arrays
     B = np.array([[0]])

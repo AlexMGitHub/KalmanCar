@@ -7,8 +7,8 @@ Created on Sat Jun  6 15:13:53 2020
 ###############################################################################
 # RaceTrack.py
 #
-# Revision:     1.00
-# Date:         6/20/2020
+# Revision:     1.01
+# Date:         8/2/2020
 # Author:       Alex
 #
 # Purpose:      Implement a parent class (RaceTrack) and two child classes
@@ -16,10 +16,10 @@ Created on Sat Jun  6 15:13:53 2020
 #               visually represent a Kalman filter estimating the position of
 #               a car driving along a race track.
 #
-# Inputs:
-# 1. RaceTrack(): Line width of true/actual path and estimated path lines
-# 2. Car(): Top speed and acceleration of car in pixels/update
-# 3. KalmanEstimate(): Kalman filter input kwargs, see KalmanFilter.py
+# Classes:
+# 1. RaceTrack()        -- Builds racetrack image and calculates car's path
+# 2. Car()              -- Blit car onto track and create red line along path
+# 3. KalmanEstimate()   -- Implements Kalman filter and draws estimates
 #
 # Notes:
 # 1. Race track art assets created by Kenney Vleugels (www.kenney.nl) and 
@@ -28,8 +28,6 @@ Created on Sat Jun  6 15:13:53 2020
 #
 ##############################################################################
 """
-
-
 #%% Imports
 import numpy as np
 import pygame
@@ -37,14 +35,17 @@ from matplotlib import pyplot as plt
 from KalmanFilter import KalmanFilter
 
 
-#%% RaceTrack class
-# This class builds the background image containing the race track, the 
-# foreground image containing trees, and calculates the path the car will take 
-# around the race track. Also calculates the location of bends in the track, 
-# location of trees obstructing the track, and the orientation of the car image 
-# as it drives along the track. 
 class RaceTrack():
+    """This class builds the background image containing the race track, the
+    foreground image containing trees, and calculates the path the car will 
+    take around the race track. Also calculates the location of bends in the 
+    track, location of trees obstructing the track, and the orientation of the 
+    car image as it drives along the track.
+    """
     def __init__(self, line_width=3):
+        """ Initialize PyGame, load tiles, calculate the car's path, calculate
+        the position of the trees, and load the background and foreground images.
+        """
         pygame.init()
         pygame.mixer.quit() # Fixes bug with high Pygame CPU usage
         pygame.display.set_caption('KalmanCar')
@@ -59,8 +60,11 @@ class RaceTrack():
         self.background = pygame.image.load('img/GameAssets/background.png').convert()
         self.foreground = pygame.image.load('img/GameAssets/foreground.png').convert_alpha()
         
-    
     def init_tiles(self):
+        """Load the tiles that comprise the background.  Create a mapping of 
+        the tiles used to assemble the background image and calculate the car's
+        path around the racetrack.
+        """
         # Import tiles and resize
         tile_scale = (32, 32) # Dimensions of re-scaled tiles
         # Roads
@@ -121,8 +125,11 @@ class RaceTrack():
         self.bend_tl = bend_tl
         self.ground = ground
 
-    
     def init_foreground(self):
+        """Create a list mapping of where trees will appear on the racetrack.
+        This mapping will be used to create the foreground image and determine
+        whether the GPS line of sight is obstructed.
+        """
         tile_cols = int(self.game_width/self.tile_scale[0])
         tile_rows = int(self.game_height/self.tile_scale[1])
         tile_mapping = self.tile_mapping
@@ -156,12 +163,12 @@ class RaceTrack():
                 if self.flat_tile_array[row,col] != self.ground:
                     self.tree_tiles[row, col] = 1
     
-
     def path_calculation(self):
-        # Use the tile mapping list to calculate the car's path and store the 
-        # coordinates. Also keep track of whether the car is moving along a 
-        # a bend or behind trees. Orientation (rotation) of car image is also
-        # computed and stored in a list.
+        """Use the tile mapping list to calculate the car's path and store the 
+        coordinates. Also keep track of whether the car is moving along a 
+        a bend or behind trees. Orientation (rotation) of car image is also
+        computed and stored in a list.
+        """
         path_coords = [] # X/Y coordinates of car moving along race track
         self.path_bend = [] # 1 if coordinate is located in bend tile
         self.path_angles = [] # Angle car is facing at each point in path
@@ -296,10 +303,10 @@ class RaceTrack():
         #self.path_coords = list(dict.fromkeys(path_coords))
         self.path_coords = path_coords
   
-    
     def calc_arc(self, arcstart, arcstop):
-        # Ugly function that returns one of four possible paths to traverse
-        # a bend in the track.
+        """Ugly function that returns one of four possible paths to traverse
+        a bend in the track.
+        """
         directionx = 1
         directiony = 1
         if arcstop[0] < arcstart[0]: directionx = -1
@@ -332,11 +339,11 @@ class RaceTrack():
         arc_coords.append(arcstop)
         return arc_coords
 
-
     def background_builder(self):
-        # Load, convert, and scale tiles used as background.  Assemble them 
-        # into a single image and save to disk. Only needs to be run if a 
-        # change to the tile mapping has bene made.
+        """Load, convert, and scale tiles used as background.  Assemble them 
+        into a single image and save to disk. Only needs to be run if a 
+        change to the tile mapping has been made.
+        """
         game_width = self.game_width
         game_height = self.game_height
         background = pygame.Surface([game_width,game_height])
@@ -368,11 +375,11 @@ class RaceTrack():
         # Save background to disk
         pygame.image.save(background, 'img/GameAssets/background.png')
         
-
     def foreground_builder(self):
-        # Load, convert, and scale trees used as foreground.  Assemble them 
-        # into a single transparent image and save to disk. Only needs to be 
-        # run if a change to the tile mapping or tree locations has been made.
+        """Load, convert, and scale trees used as foreground.  Assemble them 
+        into a single transparent image and save to disk. Only needs to be 
+        run if a change to the tile mapping or tree locations has been made.
+        """
         game_width = self.game_width
         game_height = self.game_height
         tile_scale = self.tile_scale
@@ -412,13 +419,18 @@ class RaceTrack():
         pygame.image.save(foreground, 'img/GameAssets/foreground.png')
         
         
-#%% Car class
-# Initialize the car with a user-defined top speed and acceleration.  Calculate
-# the speed of the car at each point along the track, and store these values in
-# a list. Blit the rotated car image onto the track, and draw the true/actual
-# path of the car as a red line.
 class Car(RaceTrack):
+    """Initialize the car with a user-defined top speed and acceleration.  
+    Calculate the speed of the car at each point along the track, and store 
+    these values in a list. Blit the rotated car image onto the track, and 
+    draw the true/actual path of the car as a red line.
+    """
     def __init__(self,top_speed, acceleration):
+        """Initialize the Car instance by loading, scaling, and rotating the 
+        car's image.  Set the car's attributes (speed, acceleration, position)
+        and call the speed_calc() function to calculate the car's speed at
+        every point along the racetrack.
+        """
         self.car_scale = (30,49)
         self.car = pygame.image.load('img/Cars/car_black_2.png').convert_alpha()
         self.car = pygame.transform.scale(self.car, self.car_scale)
@@ -435,11 +447,11 @@ class Car(RaceTrack):
                           self.path_coords[0][1] - int(self.car_scale[0]/2))
         self.speed_calc() # Calculate car's velocity along road
                 
-        
     def move(self, coord_idx):
-        # Move the car to its next location according to its speed. Delete the
-        # old car image and blit the new car image with the proper orientation.
-        # Center the rotated car image on the track.
+        """Move the car to its next location according to its speed. Delete the
+        old car image and blit the new car image with the proper orientation.
+        Center the rotated car image on the track.
+        """
         self.speed = self.speed_list[coord_idx]
         self.blit_ground('both') # Erase car's previous position
         new_coord = coord_idx+self.speed
@@ -452,17 +464,16 @@ class Car(RaceTrack):
         self.blit_ground('foreground') # Blit foreground on top of car
         self.draw_path(coord_idx) # Draw true/actual path of car on race track
                 
-        
     def calc_rotation(self, coord_idx):
-        # Rotate a new copy of the original car image to avoid distortion
+        """Rotate a new copy of the original car image to avoid distortion."""
         self.car_rotation = self.path_angles[coord_idx]    
         self.rotated_car = pygame.transform.rotate(self.car, self.car_rotation)
     
-    
     def blit_ground(self, ground):
-        # Blit the background AND foreground on top of the car's previous 
-        # position, OR blit only the foreground on top of the car's current 
-        # position.
+        """Blit the background AND foreground on top of the car's previous 
+        position, OR blit only the foreground on top of the car's current 
+        position.
+        """
         erase_dim = tuple(self.rotated_car.get_rect()[2:])
         coord = self.car_coord
         if ground == 'both':
@@ -471,12 +482,12 @@ class Car(RaceTrack):
         self.gameDisplay.blit(self.foreground, coord, 
                               pygame.Rect(coord, erase_dim))
 
-
     def speed_calc(self):
-        # Generates a list representing the car's speed along the road
-        # Calculates the car's speed according to the car's characteristics.
-        # Speed is clipped to be no less than the cornering speed and no more
-        # than the car's top speed.
+        """Generates a list representing the car's speed along the road
+        Calculates the car's speed according to the car's characteristics.
+        Speed is clipped to be no less than the cornering speed and no more
+        than the car's top speed.
+        """
         speed_list = np.array(self.path_bend)*self.cornering
         speed_list = list(speed_list)
         speed = self.speed
@@ -505,9 +516,8 @@ class Car(RaceTrack):
                 break # Reached end of track
         self.speed_list = speed_list
 
-
     def draw_path(self, stop_idx):
-        # Draw actual path of car as a red line
+        """Draw actual path of car as a red line."""
         start_idx = 0
         for idx, coord in enumerate(self.path_coords[start_idx:stop_idx]):
             if start_idx + idx < len(self.path_coords)-1:
@@ -515,19 +525,17 @@ class Car(RaceTrack):
                                  self.path_coords[start_idx+idx+1], self.line_width)
     
 
-#%% KalmanEstimates class
-# Initialize the class with the Kalman filter kwargs. The class then calculates
-# the pixel-by-pixel orientation of the car at every pixel along the race 
-# track. The orientation calculated in the RaceTrack() class is just an 
-# approximation used to rotate the car image in a smooth manner, and is not an 
-# accurate representation of the car's actual orientation.
-#
-# The KalmanEstimates class implements the KalmanFilter class predict() and 
-# correct() methods, draws the estimated location of the car with a blue line,
-# and draws the estimate uncertainty as a transparent green circle with a 
-# radius equal to 3 times the standard deviation of the estimate uncertainty.
 class KalmanEstimates(RaceTrack):
+    """The KalmanEstimates class implements the KalmanFilter class predict() 
+    and correct() methods, draws the estimated location of the car with a blue 
+    line, and draws the estimate uncertainty as a transparent green circle with 
+    a radius equal to 3 times the standard deviation of the estimate uncertainty.
+    """
     def __init__(self, **filter_kwargs):
+        """Initialize the class with the Kalman filter kwargs.  Inherits the
+        RaceTrack() class variables so that Kalman filter estimates and 
+        uncertainty can be plotted on the race track.
+        """
         super().__init__() # Inherit RaceTrack class variables
         self.kalman_rotation = self.path_angles.copy()
         self.init_rotation() # Calculate pixel-by-pixel car orientation
@@ -542,13 +550,13 @@ class KalmanEstimates(RaceTrack):
         self.surface = pygame.Surface((self.game_width, self.game_height), 
                                       pygame.SRCALPHA)          
       
-        
     def init_rotation(self):
-        # Calculate the orientation of the car at every pixel along the race
-        # track. There are only 8 possible orientations corresponding to one of
-        # 8 neighboring pixels. Because of this, the path coordinates must 
-        # never skip a pixel and no pixel should have more than two neighbors
-        # (adjacent pixels).
+        """Calculate the orientation of the car at every pixel along the race
+        track. There are only 8 possible orientations corresponding to one of
+        8 neighboring pixels. Because of this, the path coordinates must 
+        never skip a pixel and no pixel should have more than two neighbors
+        (adjacent pixels).
+        """
         for idx, bend_bool in enumerate(self.path_bend):
             try:
                 if bend_bool == 1 or self.path_bend[idx+1] == 1:
@@ -570,17 +578,17 @@ class KalmanEstimates(RaceTrack):
             except:
                 pass # Reached finish line (end of coordinate list)
 
-
     def predict(self):
-        # Implement the Kalman filter predict() method, and erase the previous
-        # iteration's uncertainty circle.
+        """Implement the Kalman filter predict() method, and erase the previous
+        iteration's uncertainty circle.
+        """
         self.kf.predict()
         self.erase_uncertainty_circle()
   
-    
     def estimate_coord(self, z, Q=None, R=None, u=None):
-        # Implement the Kalman filter correct() method, store the results in a
-        # list, and draw the estimated path and uncertainty circle.
+        """Implement the Kalman filter correct() method, store the results in a
+        list, and draw the estimated path and uncertainty circle.
+        """
         x, P = self.kf.correct(z, Q, R, u)
         x_coord = int(np.round(x[0,0]))
         y_coord = int(np.round(x[1,0]))
@@ -596,19 +604,18 @@ class KalmanEstimates(RaceTrack):
         self.draw_estimate_path()
         self.draw_uncertainty_circle()
     
-    
     def draw_estimate_path(self):
-        # Draw estimates calculated by Kalman filter as a blue line
+        """Draw estimates calculated by Kalman filter as a blue line."""
         for idx, coord in enumerate(self.estimates):
             if idx < len(self.estimates)-1:
                 pygame.draw.line(self.gameDisplay, (0,0,255), coord, 
                                  self.estimates[idx+1], self.line_width)
 
-    
     def erase_uncertainty_circle(self):    
-        # Delete old uncertainty circle at the previous car coordiante. Make 
-        # sure to clear transparent surface as well as blitting the background 
-        # and foreground to the gameDisplay.
+        """Delete old uncertainty circle at the previous car coordiante. Make 
+        sure to clear transparent surface as well as blitting the background 
+        and foreground to the gameDisplay.
+        """
         idx = len(self.estimates)-1
         coord = self.estimates[idx]
         radius = 3*int(np.round(np.max(self.uncertainties[idx])**0.5))
@@ -618,13 +625,13 @@ class KalmanEstimates(RaceTrack):
         self.gameDisplay.blit(self.foreground, blit_coord, clear_rect)
         self.surface.fill((0,0,0,0), clear_rect)
 
-    
     def draw_uncertainty_circle(self):
-        # Draw new uncertainty circle at the current coordinate. In order to 
-        # get a transparent circle must first blit the circle to a transparent 
-        # surface, then blit the transparent surface to the gameDisplay.
-        # Radius of circle is 3 times the standard deviation of the x-position 
-        # estimate uncertainty.
+        """Draw new uncertainty circle at the current coordinate. In order to 
+        get a transparent circle must first blit the circle to a transparent 
+        surface, then blit the transparent surface to the gameDisplay.
+        Radius of circle is 3 times the standard deviation of the x-position 
+        estimate uncertainty.
+        """
         idx = len(self.estimates)-1
         coord = self.estimates[idx]
         radius = 3*int(np.round(self.uncertainties[idx][0]**0.5))
@@ -633,10 +640,10 @@ class KalmanEstimates(RaceTrack):
         self.gameDisplay.blit(self.surface, blit_coord, 
                               pygame.Rect(blit_coord, (2*radius,2*radius)))
 
-        
     def draw_GPS_measurements(self, measurements, num_measurements):
-        # Draw GPS measurements as magenta crosses.  The number of crosses
-        # drawn each iteration can be limited to improve simulation frame rate.
+        """Draw GPS measurements as magenta crosses.  The number of crosses
+        drawn each iteration can be limited to improve simulation frame rate.
+        """
         cross_dim = 7 # Cross height and width in pixels
         cross_thk = 3 # Line width of cross
         offset = (cross_dim - 1) / 2
@@ -647,10 +654,10 @@ class KalmanEstimates(RaceTrack):
             pygame.draw.line(self.gameDisplay, color, (x, y-offset), 
                                  (x, y+offset), cross_thk)
                         
-        
     def plot_uncertainty(self):
-        # Plot Kalman estimate uncertainty versus iteration in a Matplotlib
-        # figure. 
+        """Plot Kalman estimate uncertainty versus iteration in a Matplotlib
+        figure. 
+        """
         fig, ax1 = plt.subplots()
         ax2 = ax1.twinx()
         axes = [ax1, ax1, ax2, ax2]
@@ -685,5 +692,5 @@ class KalmanEstimates(RaceTrack):
         plt.show()
         
     def close_plots(self):
-        # Close all Matplotlib plots
+        """Close all Matplotlib plots."""
         plt.close('all')

@@ -7,8 +7,8 @@ Created on Sun Jun  7 23:03:23 2020
 ###############################################################################
 # KalmanCar.py
 #
-# Revision:     1.00
-# Date:         6/20/2020
+# Revision:     1.01
+# Date:         8/2/2020
 # Author:       Alex
 #
 # Purpose:      Move a car down a race track.  The car's true path is displayed
@@ -26,8 +26,6 @@ Created on Sun Jun  7 23:03:23 2020
 #
 ##############################################################################
 """
-
-
 #%% Imports
 import pygame
 import numpy as np
@@ -39,8 +37,9 @@ import time
 
 #%% Functions
 def make_measurements(coord_sigma):
-    # Function to generate satellite coordinate measurements and car 
-    # rotation/speed measurements according to true/actual standard deviations
+    """Function to generate satellite coordinate measurements and car 
+    rotation/speed measurements according to true/actual standard deviations.
+    """
     x_pos = int(np.round(np.random.normal(rt.path_coords[path_idx][0], coord_sigma)))
     y_pos = int(np.round(np.random.normal(rt.path_coords[path_idx][1], coord_sigma)))
     # Velocity measurements
@@ -53,8 +52,9 @@ def make_measurements(coord_sigma):
     return z
 
 def update_measurement_noise(coord_var, R_matrix, coord_tree_var):
-    # If car is obstructed by trees return return degraded kf coord variance,
-    # measurement noise covariance matrix, and degraded satellite std deviation
+    """If car is obstructed by trees return return degraded kf coord variance,
+    measurement noise covariance matrix, and degraded satellite std deviation.
+    """
     if rt.tree_obstruction[path_idx] == 1: 
         new_kf_pos_var = coord_tree_var
         new_sat_sigma = pos_tree_sigma
