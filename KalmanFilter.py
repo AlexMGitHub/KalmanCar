@@ -8,14 +8,15 @@ Created on Fri Jun  5 12:18:36 2020
 ###############################################################################
 # KalmanFilter.py
 #
-# Revision:     1.01
-# Date:         8/2/2020
+# Revision:     1.02
+# Date:         8/17/2020
 # Author:       Alex
 #
 # Purpose:      Implement a general-purpose Kalman filter class.
 #
 # KalmanFilter class:
-# 1. All inputs to the class must be 2D Numpy arrays, even scalars.
+# 1. All inputs to the class must be 2D Numpy arrays. Even scalars must be
+#    represented as 2D Numpy arrays of shape (1, 1).
 # 2. See the __init__ function for a full description of inputs.
 #
 # Functions:
@@ -69,9 +70,9 @@ class KalmanFilter:
     def predict(self):
         """Time update (Predict)"""
         # State extrapolation (a priori state estimate)
-        self.x = np.dot(self.A, self.x) + np.dot(self.B, self.u)
+        self.x = self.A @ self.x + self.B @ self.u
         # Estimate error covariance extrapolation (a priori estimate error)
-        self.P = np.dot(np.dot(self.A, self.P), self.A.T) + self.Q
+        self.P = self.A @ self.P @ self.A.T + self.Q
     
     
     def correct(self, z, Q=None, R=None, u=None):
@@ -82,12 +83,12 @@ class KalmanFilter:
         m = self.m
         assert z.shape == (m, 1), "z dimensions must be {}".format((m,1))
         # Compute Kalman gain
-        _ = np.dot(np.dot(self.H, self.P), self.H.T) + R
-        self.Gain = np.dot(np.dot(self.P, self.H.T), np.linalg.inv(_)) 
+        _ = self.H @ self.P @ self.H.T + R
+        self.Gain = np.linalg.solve(_, self.P @ self.H.T)
         # Update state estimate with measurement (a posteriori state estimate)
-        self.x = self.x + np.dot(self.Gain, (z - np.dot(self.H, self.x)))
+        self.x = self.x + self.Gain @ (z - self.H @ self.x)
         # Update the estimate error covariance (a posteriori estimate error)
-        self.P = np.dot((self.IM - np.dot(self.Gain, self.H)), self.P)
+        self.P = (self.IM - (self.Gain @ self.H)) @ self.P
         # Update any changes made to measurement/process noise or control inputs
         self.Q, self.R, self.u = Q, R, u
         return self.x, self.P
@@ -99,7 +100,7 @@ def constant_voltage_example():
     https://www.cs.unc.edu/~tracker/media/pdf/SIGGRAPH2001_CoursePack_08.pdf
     """
     # Input initial values (time step = 0) for all parameters
-    A = np.array([[1]]) # Size of (1,1).  All parameters must be 2D arrays
+    A = np.array([[1]]) # Shape of (1, 1).  All parameters must be 2D arrays
     B = np.array([[0]])
     H = np.array([[1]])
     P = np.array([[1]])
