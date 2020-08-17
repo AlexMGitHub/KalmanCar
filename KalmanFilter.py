@@ -84,7 +84,7 @@ class KalmanFilter:
         assert z.shape == (m, 1), "z dimensions must be {}".format((m,1))
         # Compute Kalman gain
         _ = self.H @ self.P @ self.H.T + R
-        self.Gain = np.linalg.solve(_, self.P @ self.H.T)
+        self.Gain = self.P @ self.H.T @ np.linalg.inv(_)
         # Update state estimate with measurement (a posteriori state estimate)
         self.x = self.x + self.Gain @ (z - self.H @ self.x)
         # Update the estimate error covariance (a posteriori estimate error)
